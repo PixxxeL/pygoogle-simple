@@ -18,8 +18,8 @@ from pygoogle import pygoogle
 g = pygoogle('quake 3 arena')
 # set number of results pages
 g.pages = 5
-# set language, en as example
-g.hl
+# set language
+g.hl = 'ru'
 # query and returns the number of results 
 print g.get_result_count()
 # query and returns list of result URLs 
