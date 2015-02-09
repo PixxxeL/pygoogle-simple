@@ -103,9 +103,7 @@ class pygoogle:
         return urllib2.urlopen(request)
 
     def __search__(self, print_results=False):
-        '''
-        returns list of results if successful or False otherwise
-        '''
+        """Returns list of results if successful or False otherwise"""
         results = []
         for page in range(0, self.pages):
             rsz = 8
