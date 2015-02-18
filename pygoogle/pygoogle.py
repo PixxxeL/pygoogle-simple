@@ -6,15 +6,24 @@ Needs Python 2.6 or later
 """
 try:
     import json
-except ImportError,e:
+except ImportError as e:
     import simplejson as json
-except ImportError,e:
-    print e
+except ImportError as e:
+    print(e)
     exit()
 
 import sys
-import urllib
-import urllib2
+
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
+
 import logging
 import argparse
 
@@ -118,11 +127,11 @@ class pygoogle:
                     'hl'    : self.hl
                     }
             self.logger.debug('search: "%s" page# : %s'%(self.query, page))
-            q = urllib.urlencode(args)
+            q = urlencode(args)
 
             search_results = self.__urlopen(URL+q)
-            data = json.loads(search_results.read())
-            if not data.has_key('responseStatus'):
+            data = json.loads(search_results.read().decode('utf-8'))
+            if not 'responseStatus' in data:
                 self.logger.error('response does not have a responseStatus key')
                 continue
             if data.get('responseStatus') != 200:
@@ -132,12 +141,12 @@ class pygoogle:
                     raise PyGoogleHttpException('PyGoogle HTTP Exception code: %s' % data.get('responseStatus'))
                 continue
             if print_results:
-                if data.has_key('responseData') and data['responseData'].has_key('results'):
-                    for result in  data['responseData']['results']:
+                if 'responseData' in data:
+                    for result in data['responseData'].get('results', []):
                         if result:
-                            print '[%s]'%(urllib2.unquote(result['titleNoFormatting']))
-                            print result['content'].strip("<b>...</b>").replace("<b>",'').replace("</b>",'').replace("&#39;","'").strip()
-                            print urllib2.unquote(result['unescapedUrl'])+'\n'
+                            print('[%s]'%(urllib2.unquote(result['titleNoFormatting'])))
+                            print(result['content'].strip("<b>...</b>").replace("<b>",'').replace("</b>",'').replace("&#39;","'").strip())
+                            print(urllib2.unquote(result['unescapedUrl'])+'\n')
                 else:
                     # no responseData key was found in 'data' 
                     self.logger.error('no responseData key found in response. very unusal')
@@ -152,9 +161,9 @@ class pygoogle:
             self.logger.info('No results returned')
             return results
         for data in search_results:
-            if data.has_key('responseData') and data['responseData'].has_key('results'):
-                for result in data['responseData']['results']:
-                    if result and result.has_key('titleNoFormatting'):
+            if 'responseData' in data:
+                for result in data['responseData'].get('results', []):
+                    if result and 'titleNoFormatting' in result:
                         title = urllib2.unquote(result['titleNoFormatting'])
                         results[title] = urllib2.unquote(result['unescapedUrl'])
             else:
@@ -173,13 +182,13 @@ class pygoogle:
                     'safe' : SAFE_OFF, 
                     'filter' : FILTER_ON,    
                     }
-            q = urllib.urlencode(args)
+            q = urlencode(args)
             search_results = self.__urlopen(URL+q)
-            data = json.loads(search_results.read())
+            data = json.loads((search_results.read() or '').decode("utf-8"))
             urls = []
-            if data.has_key('responseData') and data['responseData'].has_key('results'):
-                for result in  data['responseData']['results']:
-                    if result and result.has_key('unescapedUrl'):
+            if 'responseData' in data:
+                for result in data['responseData'].get('results', []):
+                    if result and 'unescapedUrl' in result:
                         url = urllib2.unquote(result['unescapedUrl'])
                         urls.append(url)            
             else:
@@ -195,8 +204,8 @@ class pygoogle:
             self.logger.info('No results returned')
             return results
         for data in search_results:
-            if data and data.has_key('responseData') and data['responseData']['results']:
-                for result in  data['responseData']['results']:
+            if 'responseData' in data:
+                for result in data['responseData'].get('results', []):
                     if result:
                         results.append(urllib2.unquote(result['unescapedUrl']))
         return results
@@ -215,10 +224,10 @@ class pygoogle:
                 return 0
             result_count = result_count.get('responseData', None)
             if result_count:
-                if result_count.has_key('cursor') and result_count['cursor'].has_key('estimatedResultCount'):
-                    return result_count['cursor']['estimatedResultCount']
+                if 'cursor' in result_count:
+                    return result_count['cursor'].get('estimatedResultCount', 0)
             return 0
-        except Exception,e:
+        except Exception as e:
             self.logger.error(e)
         finally:
             self.pages = temp
